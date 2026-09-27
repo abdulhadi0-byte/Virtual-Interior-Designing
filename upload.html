@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Room · Virtual Interior Designing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main">
+      <div class="main-inner narrow" id="uploadView">
+        <div class="page-header" style="display:block;text-align:center;">
+          <h1>Upload your room</h1>
+          <p>We'll analyze the space and suggest layouts and colors that fit.</p>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+          <div id="dropzoneEmpty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:40px;height:40px;color:var(--accent);margin:0 auto 12px;display:block;">
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3" stroke-linecap="round"/>
+            </svg>
+            <p style="font-weight:600;margin:0;">Drag & drop or click to upload</p>
+            <p style="font-size:13px;color:var(--muted);margin-top:4px;">JPG, PNG, or WEBP — up to 8MB</p>
+          </div>
+          <div id="dropzonePreview" style="display:none;">
+            <img id="previewImg" />
+            <p style="font-size:13px;color:var(--muted);" id="fileName"></p>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Room type</p>
+          <div class="pill-row" id="roomTypeRow">
+            <button type="button" class="pill active" data-type="Living Room">Living Room</button>
+            <button type="button" class="pill" data-type="Bedroom">Bedroom</button>
+            <button type="button" class="pill" data-type="Kitchen">Kitchen</button>
+            <button type="button" class="pill" data-type="Office">Office</button>
+          </div>
+        </div>
+
+        <p class="msg msg-error" id="uploadError"></p>
+
+        <button class="btn btn-primary" id="analyzeBtn" style="margin-top:24px;" disabled>
+          Analyze Room with AI
+        </button>
+      </div>
+
+      <div class="loading-wrap" id="loadingView" style="display:none;">
+        <div class="spinner"></div>
+        <h2 style="margin:0;">Analyzing your room...</h2>
+        <p class="status-line" id="statusLine">Sending photo to Gemini</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/gemini.js"></script>
+  <script>
+    renderSidebar("upload.html");
+
+    let selectedFile = null;
+    let selectedRoomType = "Living Room";
+
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith("image/")) return;
+      if (file.size > 8 * 1024 * 1024) {
+        document.getElementById("uploadError").textContent = "Image must be under 8MB.";
+        return;
+      }
+      document.getElementById("uploadError").textContent = "";
+      selectedFile = file;
+
+      document.getElementById("dropzoneEmpty").style.display = "none";
+      const previewEl = document.getElementById("dropzonePreview");
+      previewEl.style.display = "block";
+      document.getElementById("previewImg").src = URL.createObjectURL(file);
+      document.getElementById("fileName").textContent = file.name;
+      analyzeBtn.disabled = false;
+    }
+
+    document.querySelectorAll("#roomTypeRow .pill").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#roomTypeRow .pill").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedRoomType = btn.dataset.type;
+      });
+    });
+
+    analyzeBtn.addEventListener("click", () => {
+      if (!selectedFile) return;
+      ensureApiKey((apiKey) => runAnalysis(apiKey));
+    });
+
+    async function runAnalysis(apiKey) {
+      document.getElementById("uploadView").style.display = "none";
+      document.getElementById("loadingView").style.display = "flex";
+
+      const messages = ["Sending photo to Gemini", "Reading the room", "Working out layout ideas", "Building your color palette"];
+      let i = 0;
+      const statusEl = document.getElementById("statusLine");
+      const interval = setInterval(() => {
+        i = (i + 1) % messages.length;
+        statusEl.textContent = messages[i];
+      }, 1800);
+
+      try {
+        const result = await analyzeRoomWithGemini(selectedFile, selectedRoomType, apiKey);
+        clearInterval(interval);
+        sessionStorage.setItem("pendingAnalysis", JSON.stringify({ ...result, roomType: selectedRoomType }));
+        window.location.href = "results.html";
+      } catch (err) {
+        clearInterval(interval);
+        document.getElementById("uploadView").style.display = "block";
+        document.getElementById("loadingView").style.display = "none";
+        document.getElementById("uploadError").textContent = err.message || "Something went wrong. Please try again.";
+      }
+    }
+  </script>
+</body>
+</html>

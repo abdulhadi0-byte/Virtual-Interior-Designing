@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings · Virtual Interior Designing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main">
+      <div class="main-inner narrow">
+        <div class="page-header">
+          <div>
+            <h1>Settings</h1>
+            <p>Manage your Gemini API key and local data</p>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-bottom:20px;">
+          <div class="field">
+            <label>Gemini API Key</label>
+            <input type="password" id="apiKeyField" placeholder="AIza..." />
+          </div>
+          <p class="msg" id="keyMsg"></p>
+          <button class="btn btn-primary" id="saveKeyBtn">Save Key</button>
+        </div>
+
+        <div class="card card-pad">
+          <p style="font-weight:600;margin:0 0 6px;">Clear local data</p>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 14px;">
+            Removes all saved designs, your profile info, and your API key from this browser.
+          </p>
+          <button class="btn btn-secondary" id="clearBtn">Clear Everything</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+    renderSidebar("settings.html");
+    document.getElementById("apiKeyField").value = getApiKey();
+
+    document.getElementById("saveKeyBtn").addEventListener("click", () => {
+      const val = document.getElementById("apiKeyField").value.trim();
+      setApiKey(val);
+      const msg = document.getElementById("keyMsg");
+      msg.textContent = "API key saved.";
+      msg.className = "msg msg-success";
+      setTimeout(() => (msg.textContent = ""), 2500);
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      if (confirm("This clears all local data from this browser. Continue?")) {
+        localStorage.clear();
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+</body>
+</html>

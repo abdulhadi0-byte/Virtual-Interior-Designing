@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · Virtual Interior Designing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="page-header">
+          <div>
+            <h1 id="greeting">Good Morning! 👋</h1>
+            <p>Let's design your dream space</p>
+          </div>
+          <button class="bell-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:20px;height:20px;">
+              <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13.7 21a2 2 0 01-3.4 0" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="dash-grid">
+          <a href="upload.html" class="upload-cta">
+            <div>
+              <h3>Upload Room Image</h3>
+              <p>Upload your room image to get AI-powered design suggestions.</p>
+            </div>
+            <span class="btn-white">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Upload Now
+            </span>
+          </a>
+
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="label">Total Designs</div>
+              <div class="value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Saved Designs</div>
+              <div class="value" id="statSaved">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Favorite Designs</div>
+              <div class="value" id="statFavorites">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-head">
+          <h2>Recent Designs</h2>
+          <a href="saved.html">View All</a>
+        </div>
+        <div id="recentDesigns"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+    renderSidebar("dashboard.html");
+
+    const profile = getProfile();
+    const hour = new Date().getHours();
+    const greetingWord = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+    document.getElementById("greeting").textContent = `${greetingWord}, ${profile.fullName || "Guest"}! 👋`;
+
+    const designs = getDesigns();
+    document.getElementById("statTotal").textContent = designs.length;
+    document.getElementById("statSaved").textContent = designs.length;
+    document.getElementById("statFavorites").textContent = designs.filter((d) => d.favorite).length;
+
+    const recentEl = document.getElementById("recentDesigns");
+    const recent = designs.slice(0, 3);
+
+    if (designs.length === 0) {
+      recentEl.innerHTML = `<div class="empty-state">No designs yet — upload a room photo to create your first one.</div>`;
+    } else {
+      recentEl.innerHTML = `<div class="design-grid">${recent
+        .map(
+          (d) => `
+        <a href="results.html?id=${d.id}" class="design-card">
+          <img src="${d.imageDataUrl}" class="design-thumb" alt="${d.roomType}" />
+          <div class="design-info">
+            <p class="name">${d.roomType} design</p>
+            <p class="meta">${new Date(d.created_at).toLocaleDateString()}</p>
+          </div>
+        </a>`
+        )
+        .join("")}</div>`;
+    }
+  </script>
+</body>
+</html>

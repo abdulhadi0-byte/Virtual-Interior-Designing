@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Design · Virtual Interior Designing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main">
+      <div class="main-inner" id="content">
+        <!-- populated by JS -->
+      </div>
+    </main>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+    renderSidebar("upload.html");
+
+    const contentEl = document.getElementById("content");
+    const params = new URLSearchParams(window.location.search);
+    const savedId = params.get("id");
+
+    let data;
+    if (savedId) {
+      const design = getDesigns().find((d) => d.id === savedId);
+      if (design) data = design;
+    } else {
+      const raw = sessionStorage.getItem("pendingAnalysis");
+      if (raw) data = JSON.parse(raw);
+    }
+
+    if (!data) {
+      contentEl.innerHTML = `
+        <div class="empty-state" style="max-width:420px;margin:60px auto;">
+          <p>No design to show yet. Upload a room photo first.</p>
+          <a href="upload.html" class="btn btn-primary" style="margin-top:16px;display:inline-flex;width:auto;padding:10px 20px;">Upload a room</a>
+        </div>`;
+    } else {
+      render(data);
+    }
+
+    function render(d) {
+      let selectedLayout = 0;
+      let selectedPalette = 0;
+      const alreadySaved = !!savedId;
+
+      contentEl.innerHTML = `
+        <div class="page-header">
+          <div>
+            <h1>Your suggestions</h1>
+            ${d.roomSummary ? `<p>${escapeHtml(d.roomSummary)}</p>` : ""}
+          </div>
+        </div>
+        <div class="results-grid">
+          <div class="results-photo">
+            <img src="${d.imageDataUrl}" alt="Your room" />
+          </div>
+          <div>
+            <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-bottom:10px;">Layout Suggestions</h2>
+            <div id="layoutList"></div>
+
+            <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin:20px 0 10px;">Color Palettes</h2>
+            <div class="palette-grid" id="paletteList"></div>
+
+            <button class="btn btn-primary" id="saveBtn" style="margin-top:20px;" ${alreadySaved ? "disabled" : ""}>
+              ${alreadySaved ? "Saved ✓" : "Save this design"}
+            </button>
+          </div>
+        </div>
+      `;
+
+      const layoutListEl = document.getElementById("layoutList");
+      function renderLayouts() {
+        layoutListEl.innerHTML = d.layouts
+          .map(
+            (l, i) => `
+          <button class="suggestion-card ${i === selectedLayout ? "selected" : ""}" data-i="${i}">
+            <p class="name">${escapeHtml(l.name)}</p>
+            <p class="desc">${escapeHtml(l.description)}</p>
+          </button>`
+          )
+          .join("");
+        layoutListEl.querySelectorAll(".suggestion-card").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            selectedLayout = parseInt(btn.dataset.i);
+            renderLayouts();
+          });
+        });
+      }
+      renderLayouts();
+
+      const paletteListEl = document.getElementById("paletteList");
+      function renderPalettes() {
+        paletteListEl.innerHTML = d.palettes
+          .map(
+            (p, i) => `
+          <div class="palette-card ${i === selectedPalette ? "selected" : ""}" data-i="${i}">
+            <div class="swatch-row">${p.colors.map((c) => `<span style="background:${c}"></span>`).join("")}</div>
+            <p class="name">${escapeHtml(p.name)}</p>
+          </div>`
+          )
+          .join("");
+        paletteListEl.querySelectorAll(".palette-card").forEach((el) => {
+          el.addEventListener("click", () => {
+            selectedPalette = parseInt(el.dataset.i);
+            renderPalettes();
+          });
+        });
+      }
+      renderPalettes();
+
+      if (!alreadySaved) {
+        document.getElementById("saveBtn").addEventListener("click", () => {
+          saveDesign({
+            roomType: d.roomType,
+            imageDataUrl: d.imageDataUrl,
+            layouts: d.layouts,
+            palettes: d.palettes,
+            roomSummary: d.roomSummary,
+            favorite: false,
+          });
+          sessionStorage.removeItem("pendingAnalysis");
+          window.location.href = "dashboard.html";
+        });
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str || "";
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

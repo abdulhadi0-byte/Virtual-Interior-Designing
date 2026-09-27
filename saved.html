@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saved Designs · Virtual Interior Designing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="page-header">
+          <div>
+            <h1>Saved Designs</h1>
+            <p>All the rooms you've analyzed and saved</p>
+          </div>
+        </div>
+        <div id="grid"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+    renderSidebar("saved.html");
+
+    const designs = getDesigns();
+    const gridEl = document.getElementById("grid");
+
+    if (designs.length === 0) {
+      gridEl.innerHTML = `
+        <div class="empty-state">
+          <p>No saved designs yet.</p>
+          <a href="upload.html" class="btn btn-primary" style="margin-top:14px;display:inline-flex;width:auto;padding:10px 20px;">Upload a room</a>
+        </div>`;
+    } else {
+      gridEl.innerHTML = `<div class="design-grid">${designs
+        .map(
+          (d) => `
+        <a href="results.html?id=${d.id}" class="design-card">
+          <img src="${d.imageDataUrl}" class="design-thumb" alt="${d.roomType}" />
+          <div class="design-info">
+            <p class="name">${d.roomType} design</p>
+            <p class="meta">${new Date(d.created_at).toLocaleDateString()}</p>
+          </div>
+        </a>`
+        )
+        .join("")}</div>`;
+    }
+  </script>
+</body>
+</html>
